@@ -29,21 +29,21 @@ if (form) {
     });
   });
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    
+
     const formData = new FormData(form);
-    const name = formData.get("name").trim();
-    const email = formData.get("email").trim();
-    const message = formData.get("message").trim();
-    
+    const name = (formData.get("name") || "").trim();
+    const email = (formData.get("email") || "").trim();
+    const message = (formData.get("message") || "").trim();
+
     // Validation
     if (!name || !email || !message) {
       formNote.textContent = "Please fill in all fields.";
       formNote.style.color = "#ef4444";
       return;
     }
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -51,34 +51,52 @@ if (form) {
       formNote.style.color = "#ef4444";
       return;
     }
-    
+
     // Message length validation
     if (message.length < 10) {
       formNote.textContent = "Message should be at least 10 characters.";
       formNote.style.color = "#ef4444";
       return;
     }
-    
+
     // Show loading state
     const submitBtn = form.querySelector("button");
     const originalText = submitBtn.textContent;
     submitBtn.textContent = "Sending...";
     submitBtn.disabled = true;
-    
-    // Simulate sending (in production, this would post to a backend)
-    setTimeout(() => {
-      formNote.textContent = `Thanks ${name}! I received your message and will get back to you within a business day.`;
-      formNote.style.color = "#16a34a";
-      form.reset();
-      textarea.style.height = "auto";
+
+    try {
+      const response = await fetch(form.action, {
+        method: "POST",
+        body: formData,
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (response.ok) {
+        formNote.textContent = `Thanks ${name}! I received your message and will get back to you within a business day.`;
+        formNote.style.color = "#16a34a";
+        form.reset();
+        if (textarea) {
+          textarea.style.height = "auto";
+        }
+      } else {
+        formNote.textContent = "Something went wrong. Please try again.";
+        formNote.style.color = "#ef4444";
+      }
+    } catch (error) {
+      formNote.textContent = "Network error. Please try again.";
+      formNote.style.color = "#ef4444";
+    } finally {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
-      
+
       // Clear message after 5 seconds
       setTimeout(() => {
         formNote.textContent = "";
       }, 5000);
-    }, 800);
+    }
   });
 }
 
